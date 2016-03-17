@@ -49,6 +49,13 @@ public class ContactManager {
 
     public static final String SAMPLE_GROUP_NAME = "XWiki Group";
 
+    /**
+     * Ensure XWiki contact group exists in device, if XWiki group doesn't exist, then create a new
+     * group
+     * @param context Context
+     * @param account the account
+     * @return the group id
+     */
     public static long ensureXWikiGroupExists(Context context, Account account) {
         final ContentResolver resolver = context.getContentResolver();
 
@@ -58,6 +65,7 @@ public class ContactManager {
                 Groups.ACCOUNT_NAME + "=? AND " + Groups.ACCOUNT_TYPE + "=? AND " +
                 Groups.TITLE + "=?",
                 new String[] { account.name, account.type, SAMPLE_GROUP_NAME }, null);
+
         if (cursor != null) {
             try {
                 if (cursor.moveToFirst()) {
@@ -111,8 +119,7 @@ public class ContactManager {
                 if (xwikiUser.getDate() > currentSyncDate) {
                     currentSyncDate = xwikiUser.getDate();
                 }
-
-                if (exist(xwikiUser.getId())) {
+                if (exist(xwikiUser.getId(), context)) {
                     Log.d(TAG, "Update contact");
                     updateContact(context, resolver, xwikiUser, updateServerId, true, true, true, rawContactId, batchOperation);
                 } else {
@@ -132,6 +139,20 @@ public class ContactManager {
         // TODO: Remove contacts that don't exist anymore
 
         return currentSyncDate;
+    }
+
+    private static boolean exist(String xwikiUserId, Context context) {
+        ContentResolver contentResolver = context.getContentResolver();
+
+        Cursor cursor = contentResolver.query(Contacts.CONTENT_GROUP_URI, null, Contacts._ID + "=?", new String[] {xwikiUserId}, null);
+        if (cursor != null) {
+            try {
+                return cursor.getColumnCount() != 0;
+            } finally {
+                cursor.close();
+            }
+        }
+        return false;
     }
 
     /**
